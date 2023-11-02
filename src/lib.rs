@@ -1,7 +1,7 @@
 extern crate csv;
 extern crate ndarray;
 extern crate ndarray_csv;
-use std::ops::{AddAssign, DivAssign};
+use std::ops::AddAssign;
 
 use counter::Counter;
 use csv::WriterBuilder;
@@ -100,10 +100,10 @@ pub fn update(state: &mut KMeansState, data: &Matrix) {
     for (i, row) in data.rows().into_iter().enumerate() {
         new_centroids
             .row_mut(state.cluster_assignment[i])
-            .add_assign(&row);
+            .add_assign(&row); // not sure why += doesn't work here but /= works below
     }
     for (i, mut centroid) in new_centroids.rows_mut().into_iter().enumerate() {
-        centroid.div_assign(cluster_member_counts[&i] as f64);
+        centroid /= cluster_member_counts[&i] as f64;
     }
     state.centroids = new_centroids;
 }
