@@ -1,9 +1,16 @@
+extern crate csv;
+extern crate ndarray;
+extern crate ndarray_csv;
 use std::ops::{AddAssign, DivAssign};
 
 use counter::Counter;
+use csv::WriterBuilder;
 use ndarray::{s, Array, Array1, Array2, ArrayView1};
+use ndarray_csv::Array2Writer;
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
+use std::error::Error;
+use std::fs::File;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
@@ -11,12 +18,15 @@ pub fn add(left: usize, right: usize) -> usize {
 
 const K: usize = 3; // num clusters
 
+pub type Matrix = Array2<f64>;
+pub type Vector = Array1<usize>;
+
 pub struct KMeansState {
-    centroids: Array2<f64>,
-    cluster_assignment: Array1<usize>,
+    centroids: Matrix,
+    cluster_assignment: Vector,
 }
 
-pub fn generate_random_matrix(nrows: usize, ncols: usize) -> Array2<f64> {
+pub fn generate_random_matrix(nrows: usize, ncols: usize) -> Matrix {
     let mut data = Array::random((nrows, ncols), Uniform::new(0., 5.));
     // make the clusters more visible when plotted
     for i in 0..(nrows / 3) {
@@ -33,7 +43,7 @@ fn euclidean_dist(v1: &ArrayView1<f64>, v2: &ArrayView1<f64>) -> f64 {
     return (v1 - v2).map(|a| a.powi(2)).sum(); // TODO in parallel? SIMD?
 }
 
-fn assing_to_clusters(data: &Array2<f64>, state: &mut KMeansState) {
+fn assing_to_clusters(data: &Matrix, state: &mut KMeansState) {
     // TODO compute pairwise distances in parallel, save to matrix, then get argmax by row
     for (i, row) in data.rows().into_iter().enumerate() {
         let mut dist = std::f64::MAX;
@@ -49,16 +59,32 @@ fn assing_to_clusters(data: &Array2<f64>, state: &mut KMeansState) {
     println!("Cluster assignment {}", state.cluster_assignment);
 }
 
-pub fn print_state(state: &KMeansState, data: &Array2<f64>) {
+pub fn print_state(state: &KMeansState, data: &Matrix) {
     println!("Centroids are: {}", state.centroids);
     for (i, row) in data.rows().into_iter().enumerate() {
         println!("{} -> cluster {}", row, state.cluster_assignment[i]);
     }
 }
 
-pub fn update(state: &mut KMeansState, data: &Array2<f64>) {
+pub fn to_csv(state: &KMeansState, data: &Matrix) -> Result<(), Box<dyn Error>> {
+    let filenames = vec!["data.txt", "centroids.txt", "clusters.txt"];
+    let assignments2d = state
+        .cluster_assignment
+        .mapv(|elem| elem as f64) // np.astype(float64)
+        .into_shape((1, data.nrows()))
+        .unwrap();
+    let matrices: Vec<&Matrix> = vec![&data, &state.centroids, &assignments2d];
+
+    for (filename, values) in filenames.iter().zip(matrices) {
+        let file = File::create(filename)?;
+        let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
+        writer.serialize_array2(&values)?;
+    }
+    Ok(())
+}
+
+pub fn update(state: &mut KMeansState, data: &Matrix) {
     // find the nearest centroid for each data point (row)
-    // let distances: Array1<f64> = Array1::zeros(R) * -1.0;
     println!("State at start");
     print_state(&state, data);
     for i in 1..5 {
@@ -69,7 +95,7 @@ pub fn update(state: &mut KMeansState, data: &Array2<f64>) {
 
     // update centroids -> TODO this can overflow really fast, see running avg implementation in
     // https://github.com/rust-ndarray/ndarray-examples/blob/master/k_means/src/lib.rs#L173
-    let mut new_centroids: Array2<f64> = Array2::zeros(state.centroids.dim());
+    let mut new_centroids: Matrix = Array2::zeros(state.centroids.dim());
     let cluster_member_counts = state.cluster_assignment.iter().collect::<Counter<_>>();
     for (i, row) in data.rows().into_iter().enumerate() {
         new_centroids
@@ -82,7 +108,7 @@ pub fn update(state: &mut KMeansState, data: &Array2<f64>) {
     state.centroids = new_centroids;
 }
 
-pub fn init_state(data: &Array2<f64>) -> KMeansState {
+pub fn init_state(data: &Matrix) -> KMeansState {
     let mut centroids = Array2::<f64>::zeros((K, data.ncols()));
     // take the first 3 elements "randomly"
     // data.slice(s![..K, ..])
@@ -118,5 +144,6 @@ mod tests {
         let data = generate_random_matrix(ROWS, COLS);
         let mut state = init_state(&data);
         update(&mut state, &data);
+        to_csv(&state, &data);
     }
 }
