@@ -90,22 +90,22 @@ pub fn update(state: &mut KMeansState, data: &Matrix) {
     for i in 1..5 {
         assing_to_clusters(data, state);
         println!("State at iteration {}", i);
-        print_state(&state, data)
-    }
+        print_state(&state, data);
 
-    // update centroids -> TODO this can overflow really fast, see running avg implementation in
-    // https://github.com/rust-ndarray/ndarray-examples/blob/master/k_means/src/lib.rs#L173
-    let mut new_centroids: Matrix = Array2::zeros(state.centroids.dim());
-    let cluster_member_counts = state.cluster_assignment.iter().collect::<Counter<_>>();
-    for (i, row) in data.rows().into_iter().enumerate() {
-        new_centroids
-            .row_mut(state.cluster_assignment[i])
-            .add_assign(&row); // not sure why += doesn't work here but /= works below
+        // update centroids -> TODO this can overflow really fast, see running avg implementation in
+        // https://github.com/rust-ndarray/ndarray-examples/blob/master/k_means/src/lib.rs#L173
+        let mut new_centroids: Matrix = Array2::zeros(state.centroids.dim());
+        let cluster_member_counts = state.cluster_assignment.iter().collect::<Counter<_>>();
+        for (i, row) in data.rows().into_iter().enumerate() {
+            new_centroids
+                .row_mut(state.cluster_assignment[i])
+                .add_assign(&row); // not sure why += doesn't work here but /= works below
+        }
+        for (i, mut centroid) in new_centroids.rows_mut().into_iter().enumerate() {
+            centroid /= cluster_member_counts[&i] as f64;
+        }
+        state.centroids = new_centroids;
     }
-    for (i, mut centroid) in new_centroids.rows_mut().into_iter().enumerate() {
-        centroid /= cluster_member_counts[&i] as f64;
-    }
-    state.centroids = new_centroids;
 }
 
 pub fn init_state(data: &Matrix) -> KMeansState {
