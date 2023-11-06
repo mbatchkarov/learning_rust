@@ -41,7 +41,9 @@ def update(data: Data, state: State):
         assign_to_clusters(data, state)
         new_centroids = np.zeros_like(state.centroids)
         for cluster in range(state.centroids.shape[0]):
-            new_centroids[cluster, :] = data[state.cluster_assignments == cluster, :].mean(axis=0)
+            new_centroids[cluster, :] = data[
+                state.cluster_assignments == cluster, :
+            ].mean(axis=0)
         state.centroids = new_centroids
 
 
@@ -50,7 +52,7 @@ def init_state(data: Data) -> State:
     return State(data[[0, n // 2, n - 1], :], np.zeros((n,), dtype=np.int64))
 
 
-def go(rows=10, cols=2):
+def cluster_numpy(rows=10, cols=2):
     data = generate_data(rows, cols)
     state = init_state(data)
     update(data, state)
@@ -59,4 +61,4 @@ def go(rows=10, cols=2):
 
 
 if __name__ == "__main__":
-    go()
+    cluster_numpy()
