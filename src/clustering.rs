@@ -42,7 +42,7 @@ fn euclidean_dist(v1: &ArrayView1<f64>, v2: &ArrayView1<f64>) -> f64 {
     return (v1 - v2).map(|a| a.powi(2)).sum(); // TODO in parallel? SIMD?
 }
 
-fn assing_to_clusters(data: &MatrixView, state: &mut KMeansState) {
+fn assign_to_clusters(data: &MatrixView, state: &mut KMeansState) {
     // TODO compute pairwise distances in parallel, save to matrix, then get argmax by row
     for (i, row) in data.rows().into_iter().enumerate() {
         let mut dist = std::f64::MAX;
@@ -84,7 +84,7 @@ pub fn print_state(state: &KMeansState, data: &MatrixView) {
 pub fn update(state: &mut KMeansState, data: &MatrixView) {
     // find the nearest centroid for each data point (row)
     for i in 1..5 {
-        assing_to_clusters(data, state);
+        assign_to_clusters(data, state);
 
         // update centroids -> TODO this can overflow really fast, see running avg implementation in
         // https://github.com/rust-ndarray/ndarray-examples/blob/master/k_means/src/lib.rs#L173
