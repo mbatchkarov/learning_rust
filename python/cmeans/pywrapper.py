@@ -13,13 +13,13 @@ _cluster.argtypes = [
     ctypes.c_size_t,
     ctypes.c_size_t,
     ctypes.c_size_t,
-    ndpointer(ctypes.c_uint8, flags="C_CONTIGUOUS"),
+    ndpointer(ctypes.c_int32, flags="C_CONTIGUOUS"),
 ]
 
 
 def cluster(data: np.array, k):
     nrows, ncols = data.shape
-    outdata = numpy.empty((nrows,), dtype=np.uint8)
+    outdata = numpy.empty((nrows,), dtype=np.int32)
     _cluster(data, *data.shape, k, outdata)
     return outdata
 
