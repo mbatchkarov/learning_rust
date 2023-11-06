@@ -201,10 +201,7 @@ void cluster_impl(gsl_matrix *m, size_t k, int32_t *outdata){
    free(initial_centroid_idxs);
     // TODO what else needs to be freed?
    if(outdata) {
-//       memcpy(outdata, state.cluster_assignments->data, m->size1 * sizeof(size_t)); // TODO this should work now
-       for(int i =0; i < m->size1; i++){
-        outdata[i] = state.cluster_assignments->data[i];
-       }
+      memcpy(outdata, state.cluster_assignments->data, m->size1 * sizeof(int32_t));
    }
 }
 
