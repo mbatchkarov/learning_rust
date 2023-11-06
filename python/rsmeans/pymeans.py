@@ -19,7 +19,7 @@ class State:
 def generate_data(rows, cols) -> Data:
     data = np.random.random(size=(rows, cols))
     data[: rows // 3, 0] += 10
-    data[2 * rows // 3 :, 1] += 10
+    data[2 * rows // 3:, 1] += 10
     return data
 
 
@@ -42,23 +42,22 @@ def update(data: Data, state: State):
         new_centroids = np.zeros_like(state.centroids)
         for cluster in range(state.centroids.shape[0]):
             new_centroids[cluster, :] = data[
-                state.cluster_assignments == cluster, :
-            ].mean(axis=0)
+                                        state.cluster_assignments == cluster, :
+                                        ].mean(axis=0)
         state.centroids = new_centroids
 
 
-def init_state(data: Data) -> State:
+def init_state(data: Data, k) -> State:
     n = len(data)
-    return State(data[[0, n // 2, n - 1], :], np.zeros((n,), dtype=np.int64))
+    indices = [0, n // 2, n - 1] if k == 3 else np.random.randint(low=0, high=n, size=(k,))
+    return State(data[indices, :], np.zeros((n,), dtype=np.int64))
 
 
-def cluster_numpy(rows=10, cols=2):
-    data = generate_data(rows, cols)
-    state = init_state(data)
+def cluster_numpy(data, k):
+    state = init_state(data, k)
     update(data, state)
-    print(state.cluster_assignments)
     return state.cluster_assignments
 
 
 if __name__ == "__main__":
-    cluster_numpy()
+    cluster_numpy(generate_data(10, 2), k=3)

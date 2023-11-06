@@ -45,9 +45,9 @@ gsl_vector_uint *init_centroids(size_t k, gsl_matrix *m) {
     }
 
     // TODO hardcode a perfect initialization to see if the algo converges
-//    gsl_vector_uint_set(indices, 0, m->size1 / 6);
-//    gsl_vector_uint_set(indices, 1, m->size1 / 2);
-//    gsl_vector_uint_set(indices, 2, 5 * m->size1 / 6);
+   gsl_vector_uint_set(indices, 0, 0);
+   gsl_vector_uint_set(indices, 1, m->size1 / 2);
+   gsl_vector_uint_set(indices, 2, m->size1 - 1);
     return indices;
 }
 
@@ -145,7 +145,6 @@ void get_data_at(gsl_matrix *data, gsl_vector_uint *centroid_idx, gsl_matrix *ce
     for (int i = 0; i < centroids->size1; i++) {
         // copy centroid indices
         gsl_vector_view row = gsl_matrix_row(data, gsl_vector_uint_get(centroid_idx, i));
-//        print_vec(&row.vector);
         gsl_matrix_set_row(centroids, i, &row.vector);
     }
 }
@@ -181,29 +180,23 @@ void cluster_impl(gsl_matrix *m, size_t k, uint8_t *outdata){
     init_random();
 
     gsl_vector_uint *initial_centroid_idxs = init_centroids(k, m);
-    print_vec_uint(initial_centroid_idxs);
    iter_result state;
 
    gsl_vector_uint *cluster_assignment = gsl_vector_uint_alloc(m->size1);
-   print_vec_uint(cluster_assignment);
 
    gsl_matrix *centroids = gsl_matrix_alloc(k, m->size2);
    get_data_at(m, initial_centroid_idxs, centroids);
-   print_mat(centroids);
 
    state.centroids = centroids;
    state.cluster_assignments = cluster_assignment;
 
    for (int i = 0; i < 5; i++){ // TODO or until convergence
        update(&state, m, k);
-       print_vec_uint(state.cluster_assignments);
    }
-   write_state(state, m);
+//   write_state(state, m);
    free(initial_centroid_idxs);
     // TODO what else needs to be freed?
    if(outdata) {
-       printf("Copy results to out array \n");
-       print_vec_uint(state.cluster_assignments);
 //       memcpy(outdata, state.cluster_assignments->data, m->size1 * sizeof(uint8_t));
        for(int i =0; i < m->size1; i++){
         outdata[i] = state.cluster_assignments->data[i];
@@ -217,9 +210,6 @@ void cluster(double *indatav, size_t rows, size_t cols, size_t k, uint8_t *outda
     // https://stackoverflow.com/a/23954793/419338
     gsl_matrix_view mv = gsl_matrix_view_array(indatav, rows, cols);
     gsl_matrix *matrix = &(mv.matrix);
-    printf("matrix incoming\n");
-    print_mat(matrix);
-    printf("1xxx");
     cluster_impl(matrix, k, outdatav);
 }
 

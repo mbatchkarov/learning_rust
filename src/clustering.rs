@@ -55,7 +55,6 @@ fn assing_to_clusters(data: &MatrixView, state: &mut KMeansState) {
             }
         }
     }
-    println!("Cluster assignment {}", state.cluster_assignment);
 }
 
 pub fn print_state(state: &KMeansState, data: &MatrixView) {
@@ -84,12 +83,8 @@ pub fn print_state(state: &KMeansState, data: &MatrixView) {
 
 pub fn update(state: &mut KMeansState, data: &MatrixView) {
     // find the nearest centroid for each data point (row)
-    println!("State at start");
-    print_state(&state, data);
     for i in 1..5 {
         assing_to_clusters(data, state);
-        println!("State at iteration {}", i);
-        print_state(&state, data);
 
         // update centroids -> TODO this can overflow really fast, see running avg implementation in
         // https://github.com/rust-ndarray/ndarray-examples/blob/master/k_means/src/lib.rs#L173
