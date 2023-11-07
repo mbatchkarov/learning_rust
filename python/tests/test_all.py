@@ -1,3 +1,4 @@
+import datetime
 from collections import Counter
 
 import pytest
@@ -18,7 +19,7 @@ def test_kmeans_python():
     np.testing.assert_equal(EXPECTED, cluster_numpy(SMALL_DATA, K))
 
 
-def test_kmeans_rust():  # run `maturin develop` or `maturin build -r --strip` to build the rust extension
+def test_kmeans_rust():  # run `maturin develop -r` or `maturin build -r --strip` to build the rust extension
     np.testing.assert_equal(EXPECTED, cluster_rust(SMALL_DATA, K))
 
 
@@ -33,7 +34,9 @@ def cluster_sklearn(data, k):
 @pytest.mark.parametrize("cluster_func", [cluster_numpy, cluster_rust, cluster_c, cluster_sklearn])
 def test_larger_data(cluster_func):
     k = 10
-    big_data, gold_labels = make_blobs(n_samples=10_000, n_features=150, centers=k)
+    big_data, gold_labels = make_blobs(n_samples=10_000, n_features=1500, centers=k)
     print(Counter(gold_labels))
+    start = datetime.datetime.now()
     predicted = cluster_func(big_data, k)
     print(Counter(predicted))
+    print("Time taken:", datetime.datetime.now() - start)

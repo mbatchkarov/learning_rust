@@ -19,3 +19,7 @@ ndarray-rand = "0.14.0"
 ndarray-csv = "0.5.2"
 numpy = "0.20.0"
 ndarray-linalg = { version = "0.16.0", features = ["openblas-system"] }
+
+[[bin]]
+name = "entrypoint"
+path = "src/clustering.rs"

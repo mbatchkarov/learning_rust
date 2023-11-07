@@ -5,10 +5,10 @@ use std::ops::AddAssign;
 
 use counter::Counter;
 use ndarray::{s, Array, Array1, Array2, ArrayView1, ArrayView2};
-use ndarray_csv::Array2Writer;
+
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
-use std::error::Error;
+
 use std::time::{Instant};
 
 pub type Matrix = Array2<f64>;
@@ -78,7 +78,7 @@ pub fn print_state(state: &KMeansState, data: &MatrixView) {
 
 pub fn update(state: &mut KMeansState, data: &MatrixView) {
     // find the nearest centroid for each data point (row)
-    for i in 1..5 {
+    for _i in 1..5 {
         assign_to_clusters(data, state);
 
         // update centroids -> TODO this can overflow really fast, see running avg implementation in
@@ -127,21 +127,25 @@ pub fn cluster<'a>(data: &'a MatrixView<'a>, k: &'a usize) -> Vector {
     state.cluster_assignment
 }
 
+fn main() {
+    const ROWS: usize = 10_000; // rows
+    const COLS: usize = 1500; // cols
+    const K: usize = 10; // num clusters
+
+    let data = generate_random_matrix(ROWS, COLS);
+    let start = Instant::now();
+    let mut state = init_state(&data.view(), &K);
+    update(&mut state, &data.view());
+    let duration = start.elapsed();
+    println!("Time elapsed for {:?} matrix is: {:?}", data.dim(), duration);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    const ROWS: usize = 10_000; // rows
-    const COLS: usize = 150; // cols
-    const K: usize = 3; // num clusters
 
     #[test]
     fn it_works() {
-        let data = generate_random_matrix(ROWS, COLS);
-        let start = Instant::now();
-        let mut state = init_state(&data.view(), &K);
-        update(&mut state, &data.view());
-        let duration = start.elapsed();
-        println!("Time elapsed in expensive_function() is: {:?}", duration);
-        // to_csv(&state, &data);
+        main();
     }
 }

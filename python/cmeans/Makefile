@@ -2,6 +2,7 @@
 # then (https://stackoverflow.com/a/38713916)
 # sudo ln -s /Users/mirobat/homebrew/Cellar/gsl/2.7.1/include/gsl /usr/local/include/gsl
 # sudo ln -s /Users/mirobat/homebrew/Cellar/gsl/2.7.1/lib /usr/local/lib/gsl
+# I saw a warning that OMP/BLAS are missing => `brew install libomp openblas`
 
 GSL_INCLUDE = -I/usr/local/include -I/usr/include -L/usr/local/lib/gsl
 GSL_FLAGS = -lgsl -O3 -lgslcblas -lm
