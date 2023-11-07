@@ -14,7 +14,7 @@ pyo3 = { version = "0.20", features = ["extension-module"] }
 csv = "1.1.0"
 counter = "0.5.7"
 rand = "0.8.5"
-ndarray = "0.15.6"                                                      # no need for explicit import, comes from numpy
+ndarray = { version = "0.15.6", features = ["rayon"] }
 ndarray-rand = "0.14.0"
 ndarray-csv = "0.5.2"
 numpy = "0.20.0"

@@ -4,12 +4,13 @@ extern crate ndarray_csv;
 use std::ops::AddAssign;
 
 use counter::Counter;
-use ndarray::{s, Array, Array1, Array2, ArrayView1, ArrayView2};
+use ndarray::parallel::prelude::*;
+use ndarray::{s, Array, Array1, Array2, ArrayView1, ArrayView2, Axis};
 
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 
-use std::time::{Instant};
+use std::time::Instant;
 
 pub type Matrix = Array2<f64>;
 pub type MatrixView<'a> = ArrayView2<'a, f64>;
@@ -38,18 +39,26 @@ fn euclidean_dist(v1: &ArrayView1<f64>, v2: &ArrayView1<f64>) -> f64 {
 }
 
 fn assign_to_clusters(data: &MatrixView, state: &mut KMeansState) {
-    // TODO compute pairwise distances in parallel, save to matrix, then get argmax by row
-    for (i, row) in data.rows().into_iter().enumerate() {
-        let mut dist = std::f64::MAX;
-
-        for (j, centroid) in state.centroids.rows().into_iter().enumerate() {
-            let dist_to_this = euclidean_dist(&row, &centroid);
-            if dist_to_this < dist {
-                dist = dist_to_this;
-                state.cluster_assignment[i] = j;
+    let mut nearest_clusters = Vec::new();
+    data.axis_iter(Axis(0))
+        .into_par_iter()
+        .map(|row| {
+            let mut dist = std::f64::MAX;
+            let mut nearest_cluster_id = std::usize::MAX;
+            for (j, centroid) in state.centroids.rows().into_iter().enumerate() {
+                let dist_to_this = euclidean_dist(&row, &centroid);
+                if dist_to_this < dist {
+                    dist = dist_to_this;
+                    nearest_cluster_id = j;
+                }
             }
-        }
-    }
+            nearest_cluster_id
+        })
+        .collect_into_vec(&mut nearest_clusters);
+
+    state
+        .cluster_assignment
+        .assign(&Vector::from_vec(nearest_clusters));
 }
 
 pub fn print_state(state: &KMeansState, data: &MatrixView) {
@@ -137,7 +146,11 @@ fn main() {
     let mut state = init_state(&data.view(), &K);
     update(&mut state, &data.view());
     let duration = start.elapsed();
-    println!("Time elapsed for {:?} matrix is: {:?}", data.dim(), duration);
+    println!(
+        "Time elapsed for {:?} matrix is: {:?}",
+        data.dim(),
+        duration
+    );
 }
 
 #[cfg(test)]

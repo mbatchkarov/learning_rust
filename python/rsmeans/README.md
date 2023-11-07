@@ -28,7 +28,7 @@ Speed comparison for 10k x 1.5k matrix w/ 10 clusters (M1 pro macbook pro):
 
 Intel macbook pro:
 - numpy 4s
-- rust 0.7s
+- rust 0.7s/ parallel rust 0.2s
 - c 1.9s
 - sklearn 0.4s
 
