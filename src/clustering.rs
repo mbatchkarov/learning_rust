@@ -4,17 +4,12 @@ extern crate ndarray_csv;
 use std::ops::AddAssign;
 
 use counter::Counter;
-use csv::WriterBuilder;
 use ndarray::{s, Array, Array1, Array2, ArrayView1, ArrayView2};
 use ndarray_csv::Array2Writer;
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 use std::error::Error;
-use std::fs::File;
-
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use std::time::{Instant};
 
 pub type Matrix = Array2<f64>;
 pub type MatrixView<'a> = ArrayView2<'a, f64>;
@@ -39,7 +34,7 @@ pub fn generate_random_matrix(nrows: usize, ncols: usize) -> Matrix {
 
 fn euclidean_dist(v1: &ArrayView1<f64>, v2: &ArrayView1<f64>) -> f64 {
     // compute sum((a - b) ^ 2)- don't need sqrt because we only care about argmin
-    return (v1 - v2).map(|a| a.powi(2)).sum(); // TODO in parallel? SIMD?
+    return (v1 - v2).map(|a| a * a).sum(); // TODO in parallel? SIMD?
 }
 
 fn assign_to_clusters(data: &MatrixView, state: &mut KMeansState) {
@@ -105,21 +100,23 @@ pub fn update(state: &mut KMeansState, data: &MatrixView) {
 fn init_state<'a>(data: &'a MatrixView<'a>, k: &'a usize) -> KMeansState {
     let mut centroids = Array2::<f64>::zeros((k.to_owned(), data.ncols()));
     // take the first 3 elements "randomly"
-    // data.slice(s![..K, ..])
-    //     .assign_to(centroids.slice_mut(s![..K, ..]));
+    data.slice(s![..k.to_owned(), ..])
+        .assign_to(centroids.slice_mut(s![..k.to_owned(), ..]));
 
-    // take one centroid from each cluster so iteration is guaranteed to converge
-    for (i, j) in vec![0, data.nrows() / 2, data.nrows() - 1]
-        .into_iter()
-        .enumerate()
-    {
-        data.slice(s![j, ..])
-            .assign_to(centroids.slice_mut(s![i, ..]));
+    if k == &3usize {
+        // take one centroid from each cluster so iteration is guaranteed to converge
+        for (i, j) in vec![0, data.nrows() / 2, data.nrows() - 1]
+            .into_iter()
+            .enumerate()
+        {
+            data.slice(s![j, ..])
+                .assign_to(centroids.slice_mut(s![i, ..]));
+        }
     }
 
     return KMeansState {
         // centroids: data.slice(Slice::from(0..=K)), // TODO need 0..K
-        centroids: centroids,
+        centroids,
         cluster_assignment: Array1::zeros(data.nrows()),
     };
 }
@@ -133,18 +130,18 @@ pub fn cluster<'a>(data: &'a MatrixView<'a>, k: &'a usize) -> Vector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    const ROWS: usize = 10; // rows
-    const COLS: usize = 2; // cols
+    const ROWS: usize = 10_000; // rows
+    const COLS: usize = 150; // cols
     const K: usize = 3; // num clusters
 
     #[test]
     fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-
         let data = generate_random_matrix(ROWS, COLS);
+        let start = Instant::now();
         let mut state = init_state(&data.view(), &K);
         update(&mut state, &data.view());
+        let duration = start.elapsed();
+        println!("Time elapsed in expensive_function() is: {:?}", duration);
         // to_csv(&state, &data);
     }
 }
