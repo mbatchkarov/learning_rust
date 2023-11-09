@@ -50,7 +50,7 @@ fn euclidean_dist(v1: &ArrayView1<f64>, v2: &ArrayView1<f64>) -> f64 {
 }
 
 fn assign_to_clusters(data: &MatrixView, state: &mut KMeansState) {
-    println!("num threads {}", current_num_threads());
+    // println!("num threads {}", current_num_threads());
     let mut nearest_clusters = Vec::new();
     data.axis_iter(Axis(0))
         .into_par_iter()
