@@ -9,7 +9,7 @@ name = "rsmeans"
 crate-type = ["cdylib"]
 
 [dependencies]
-# pyo3 = "0.20.0"
+rayon = "1.8.0"
 pyo3 = { version = "0.20", features = ["extension-module"] }
 csv = "1.1.0"
 counter = "0.5.7"
@@ -19,7 +19,6 @@ ndarray-rand = "0.14.0"
 ndarray-csv = "0.5.2"
 numpy = "0.20.0"
 ndarray-linalg = { version = "0.16.0", features = ["openblas-system"] }
-
 [[bin]]
 name = "entrypoint"
 path = "src/clustering.rs"

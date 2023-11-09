@@ -5,10 +5,11 @@ use std::ops::AddAssign;
 
 use counter::Counter;
 use ndarray::parallel::prelude::*;
-use ndarray::{s, Array, Array1, Array2, ArrayView1, ArrayView2, Axis};
+use ndarray::{s, Array, Array1, Array2, ArrayView1, ArrayView2, Axis, Zip};
 
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
+use rayon::current_num_threads;
 
 use std::time::Instant;
 
@@ -33,12 +34,23 @@ pub fn generate_random_matrix(nrows: usize, ncols: usize) -> Matrix {
     return data;
 }
 
+#[inline(always)]
 fn euclidean_dist(v1: &ArrayView1<f64>, v2: &ArrayView1<f64>) -> f64 {
     // compute sum((a - b) ^ 2)- don't need sqrt because we only care about argmin
-    return (v1 - v2).map(|a| a * a).sum(); // TODO in parallel? SIMD?
+    // return (v1 - v2).map(|a| a * a).sum(); // TODO in parallel? SIMD?
+    return Zip::from(&*v1)
+        .and(&*v2)
+        .fold(0.0, |acc, a, b| acc + (a - b) * (a - b));
+    // .par_fold(
+    //     // https://docs.rs/ndarray/latest/ndarray/struct.Zip.html#method.fold-4
+    //     || 0.0,
+    //     |acc, a, b| acc + (a - b) * (a - b),
+    //     |sum, other_sum| sum + other_sum,
+    // ); // par_fold is slower, my vectors are not large enough
 }
 
 fn assign_to_clusters(data: &MatrixView, state: &mut KMeansState) {
+    println!("num threads {}", current_num_threads());
     let mut nearest_clusters = Vec::new();
     data.axis_iter(Axis(0))
         .into_par_iter()
