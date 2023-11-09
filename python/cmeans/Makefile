@@ -1,13 +1,28 @@
 GSL_INCLUDE = -I/usr/local/include -I/usr/include -L/usr/local/lib/gsl
-GSL_FLAGS = -lgsl -O3 -lgslcblas -lm
+GSL_FLAGS = -lgsl -O3 -lgslcblas -lm -march=native -ffast-math -Ofast -funroll-loops -fprefetch-loop-arrays
+
+UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
+ifeq ($(UNAME_S),Linux)
+	CC = gcc
+endif
+ifeq ($(UNAME_S),Darwin)
+	CC = clang
+endif
+
+ifeq ($(UNAME_M),arm64)
+	GSL_FLAGS += -arch arm64
+endif
 
 compile: clean
-	gcc -g $(GSL_INCLUDE) -Wall cmeans.c -o exe $(GSL_FLAGS) && time ./exe
+	$(CC) $(GSL_FLAGS) $(GSL_INCLUDE)-g -Wall -c cmeans.c
+	$(CC) $(GSL_FLAGS) $(GSL_INCLUDE) -o exe cmeans.o
+	time ./exe
 
 
 sharedlib: clean
-	gcc $(GSL_INCLUDE) $(GSL_FLAGS) -Wall -fPIC -c cmeans.c
-	gcc $(GSL_INCLUDE) $(GSL_FLAGS) -dynamiclib -o libcmeans.so cmeans.o
+	$(CC) $(GSL_INCLUDE) $(GSL_FLAGS) -Wall -fPIC -c cmeans.c
+	$(CC) $(GSL_INCLUDE) $(GSL_FLAGS) -dynamiclib -o libcmeans.so cmeans.o
 
 
 profile:

@@ -215,8 +215,9 @@ void cluster(double *indatav, size_t rows, size_t cols, size_t k, int32_t *outda
 }
 
 int main(void) {
-    gsl_matrix *m = gsl_matrix_alloc(10, 3);
-    generate_data(m, 3);
-    cluster_impl(m, 3, NULL);
+    int k = 3;
+    gsl_matrix *m = gsl_matrix_alloc(1000, 150);
+    generate_data(m, k);
+    cluster_impl(m, k, NULL);
     return 0;
 }
