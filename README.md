@@ -15,15 +15,19 @@ Speed comparison for 10k x 1.5k matrix w/ 10 clusters (M1 pro macbook pro, 2015 
 
 |         | Time, s (Intel) | Time, s (M1) | Memory, MB | Days to write |
 |---------|-----------------|--------------|------------|---------------|
-| Numpy   | 3.97            | ?            | 450        | 0.2           | 
-| C       | 1.55            | ?            | 372        | 2             |
-| Rust    | 0.28            | ?            | 368        | 2             |
-| Sklearn | 0.42            | ?            | 487        | ?             |
+| Numpy   | 0.45            | 0.24         | 450        | 0.2           | 
+| C       | 1.60            | 1.61         | 372        | 2             |
+| Rust    | 0.13            | 0.08         | 368        | 2             |
+| Sklearn | 0.20            | 0.10         | 487        | -             |
 
-Flamegraph shows most of the time is spent in euclidean distance calculation (map a->a*a, subtract, sum)
+Notes:
+- M1 is 3-4x faster than a previous-gen intel mac, nice. I must be doing something wrong with the compilation of the C version on M1 because it can't beat the intel mac.
+- Flamegraph shows most of the time is spent in euclidean distance calculation (map a->a*a, subtract, sum), can optimize there
+  - rewrote rust implementation of euclidean distance, got 2x speedup
+  - used `rayon` to compute distances in parallel in rust- got 2x speedup for 30 min of work
+  - used sklearn's pairwise distance function to get 1) parallel computation and 2) an optimized distance function from scipy. This was a 5x boost for 5 min of work.
 
-Method for memory use:
-
+Method for memory use: edit `test_all.py` to leave only one clustering function, then run 
 ```bash
 /usr/local/bin/gtime -v pytest -s
 ```
@@ -51,6 +55,10 @@ Method for runtime: see `speed.ipynb` notebook in this repo.
 
 It took me a total or 5 runs of the unit test, 10-15 min to fix all the above. I'm on the fence whether python or rust version would be easier to maintain. I find the python one easier to read because it's shorter and because I'm much more experienced with numpy slicing- but maybe there's too much magic and others may find this harder. With a small investment into typing I could probably get something that's self-documenting like rust
 
+The quality of the python scientific ecosystem blows me away every time, even after 10 year. The fact that everyone is using numpy, scipy and sklearn means these work very well together, so it's (usually) easy to benefit from well-optimized low-level code. Eg in sklearn, set `dist='sqeuclidean'` to use a good implementation of a distance function from scipy that takes numpy arrays as input. You get 90% of the way there with 10% of the effort. To get the same in Rust, I had to either write my own (not as fast) or google for less-known libraries
+  - https://github.com/lazear/simd-euclidean
+  - https://blog.lancedb.com/my-simd-is-faster-than-yours-fb2989bf25e7
+
 ### Usage instructions
 Python: install `requirements.txt`
 C: see Readme in `./cmeans` directory
@@ -58,5 +66,6 @@ Rust: install rust; `pip install maturin`; `maturin build -r` to build python bi
 
 ### TODOs
 
-- for numpy version, use `sklearn.pairwise` to compute distances
+- for numpy version, use `sklearn.pairwise` to compute distances --> runtime goes from 1.2s to 0.38s (with 1 job) and 0.25s (with n_jobs == N_cpu)
+- Bug to fix: python version sometimes crashes due to division by zero when averaging the data points in a cluster (when the cluster is empty). This bug likey exists in the  C/Rust version too but I didn't see any warnings or errors
 - profile C/Rust some more and try to vectorize the tight inner loop (distance between all centroids and data points)
