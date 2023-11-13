@@ -16,7 +16,7 @@ Speed comparison for 10k x 1.5k matrix w/ 10 clusters (M1 pro macbook pro, 2015 
 |         | Time, s (Intel) | Time, s (M1) | Memory, MB | Days to write |
 |---------|-----------------|--------------|------------|---------------|
 | Numpy   | 0.45            | 0.24         | 450        | 0.2           | 
-| C       | 1.60            | 1.61         | 372        | 2             |
+| C       | 0.20            | 0.14         | 372        | 2             |
 | Rust    | 0.13            | 0.08         | 368        | 2             |
 | Sklearn | 0.20            | 0.10         | 487        | -             |
 
@@ -26,6 +26,7 @@ Notes:
   - rewrote rust implementation of euclidean distance, got 2x speedup
   - used `rayon` to compute distances in parallel in rust- got 2x speedup for 30 min of work
   - used sklearn's pairwise distance function to get 1) parallel computation and 2) an optimized distance function from scipy. This was a 5x boost for 5 min of work.
+- Rust is faster than C but it's using multiple cores and C is single-threaded
 
 Method for memory use: edit `test_all.py` to leave only one clustering function, then run 
 ```bash

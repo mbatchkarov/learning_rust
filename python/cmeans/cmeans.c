@@ -2,15 +2,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
+#include <math.h>
+#include <time.h>
 
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_vector_int.h>
 #include <gsl/gsl_rng.h>
+#include <gsl/gsl_blas.h>
 
 void dist_to_centroids(gsl_matrix *data, gsl_matrix *centroids, gsl_matrix *dist, gsl_vector_int *cluster_assignment);
 
 gsl_rng *r; /* global generator */
+
+
+long long current_time_millis() {
+    struct timespec res;
+    clock_gettime(CLOCK_REALTIME, &res);
+
+    long long millis = res.tv_sec * 1000;
+    millis += res.tv_nsec / 1000000;
+
+    return millis;
+}
 
 void cluster_impl(gsl_matrix *m, size_t k, int32_t *outdata);
 
@@ -101,10 +115,10 @@ void update(iter_result *state, gsl_matrix *data, int k) {
     gsl_vector_int *counts = gsl_vector_int_alloc(state->centroids->size1); // num items per cluster
     for (int i = 0; i < data->size1; i++) {
         int cluster_id = gsl_vector_int_get(state->cluster_assignments, i);
-        gsl_vector_int_set(counts, cluster_id, 1.0 + gsl_vector_int_get(counts, cluster_id));
+        gsl_vector_int_set(counts, cluster_id, 1 + gsl_vector_int_get(counts, cluster_id));
         gsl_vector this_centroid = gsl_matrix_row(new_centroids, cluster_id).vector;
         gsl_vector this_row = gsl_matrix_row(data, i).vector;
-        gsl_vector_add(&this_centroid, &this_row);
+        gsl_blas_daxpy(1.0, &this_row, &this_centroid);
     }
 
     for (int i = 0; i < new_centroids->size1; i++) {
@@ -118,13 +132,11 @@ void update(iter_result *state, gsl_matrix *data, int k) {
 }
 
 inline double euclidean_dist(gsl_vector_view x, gsl_vector_view y, gsl_vector *res) {
-    // TODO this can prob be done faster with blas
-    gsl_vector_memcpy(res, &x.vector);
-
-    // compute sum((a - b) ^ 2)- don't need sqrt because we only care about argmin
-    gsl_vector_sub(res, &y.vector); // stores result in 1st param
-    gsl_vector_mul(res, res);
-    return gsl_vector_sum(res);
+    double result = 0;
+    for(int i = 0; i < x.vector.size; i++){
+        result += pow(x.vector.data[i] - y.vector.data[i], 2);
+    }
+    return result;
 }
 
 void dist_to_centroids(gsl_matrix *data, gsl_matrix *centroids, gsl_matrix *dist, gsl_vector_int *cluster_assignment) {
@@ -215,9 +227,15 @@ void cluster(double *indatav, size_t rows, size_t cols, size_t k, int32_t *outda
 }
 
 int main(void) {
-    int k = 3;
-    gsl_matrix *m = gsl_matrix_alloc(1000, 150);
+    int k = 10;
+    init_random();
+    gsl_matrix *m = gsl_matrix_alloc(10000, 1500);
     generate_data(m, k);
-    cluster_impl(m, k, NULL);
+    long long start = current_time_millis();
+    int32_t *res = malloc(10000 * sizeof(int32_t));
+    cluster_impl(m, k, res);
+    long long end = current_time_millis();
+    printf("Time taken: %lldms\n", (end - start));
+    print_array(res, 10000);
     return 0;
 }

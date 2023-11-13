@@ -17,7 +17,7 @@ endif
 compile: clean
 	$(CC) $(GSL_FLAGS) $(GSL_INCLUDE)-g -Wall -c cmeans.c
 	$(CC) $(GSL_FLAGS) $(GSL_INCLUDE) -o exe cmeans.o
-	time ./exe
+	gtime -v ./exe
 
 
 sharedlib: clean
